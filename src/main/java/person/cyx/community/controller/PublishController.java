@@ -4,14 +4,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import person.cyx.community.mapper.QuestionMapper;
-import person.cyx.community.mapper.UserMapper;
+import person.cyx.community.dto.QuestionDTO;
 import person.cyx.community.model.Question;
 import person.cyx.community.model.User;
+import person.cyx.community.service.QuestionService;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -24,10 +24,18 @@ import javax.servlet.http.HttpServletRequest;
 public class PublishController {
 
     @Autowired
-    private QuestionMapper questionMapper;
+    private QuestionService questionService;
 
-    @Autowired
-    private UserMapper userMapper;
+    @GetMapping("/publish/{id}")
+    public String edit(@PathVariable(name = "id") Long id,
+                       Model model){
+        QuestionDTO question = questionService.getById(id);
+        model.addAttribute("title",question.getTitle());
+        model.addAttribute("description",question.getDescription());
+        model.addAttribute("tag",question.getTag());
+        model.addAttribute("id",id);
+        return "publish";
+    }
 
     @GetMapping("/publish")
     public String publish(){
@@ -38,8 +46,13 @@ public class PublishController {
     public String doPublish(@RequestParam("title") String title,
                             @RequestParam("description") String descrpition,
                             @RequestParam("tag") String tag,
+                            @RequestParam("id") Long id,
                             HttpServletRequest request,
                             Model model){
+
+        model.addAttribute("title",title);
+        model.addAttribute("description",descrpition);
+        model.addAttribute("tag",tag);
 
         if (title == null || title == "") {
             model.addAttribute("error","标题不能为空");
@@ -54,34 +67,21 @@ public class PublishController {
             return "publish";
         }
 
-        User user = null;
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null && cookies.length != 0) {
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("token")) {
-                    String token = cookie.getValue();
-                    user = userMapper.findByToken(token);
-                    if (user != null) {
-                        request.getSession().setAttribute("user", user);
-                    }
-                    break;
-                }
-            }
-        }
-
+        User user = (User) request.getSession().getAttribute("user");
         if (user == null) {
             model.addAttribute("error","用户未登录");
             return "publish";
         }
+
         Question question = new Question();
         question.setTitle(title);
         question.setDescription(descrpition);
         question.setTag(tag);
-        question.setGmtCreate(System.currentTimeMillis());
-        question.setGmtModified(question.getGmtCreate());
         question.setCreator(user.getId());
 
-        questionMapper.create(question);
+        question.setId(id);
+        questionService.createOrUpdate(question);
+
         return "redirect:/";
 
     }

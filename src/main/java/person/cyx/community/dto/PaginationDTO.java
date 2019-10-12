@@ -20,21 +20,29 @@ public class PaginationDTO {
     private boolean showEndPage;
     private Integer page;
     private List<Integer> pages = new ArrayList<>();
+    private Integer totalPage;
 
     public void setPagination(Integer count, Integer page, Integer size) {
-        Integer totalPage;
         if (count % size == 0){
             totalPage = count / size;
         }else {
             totalPage = count / size + 1;
         }
 
+        if (page < 1){
+            page = 1;
+        }
+        if (page > totalPage){
+            page = totalPage;
+        }
+        this.page = page;
+
         pages.add(page);
         for (int i = 1; i <= 3; i++) {
-            if (page - 1 > 0){
-                pages.add(page - i,0);
+            if (page - i > 0){
+                pages.add(0,page - i);
             }
-            if (page + 1 <= count){
+            if (page + i <= totalPage){
                 pages.add(page + i);
             }
         }
