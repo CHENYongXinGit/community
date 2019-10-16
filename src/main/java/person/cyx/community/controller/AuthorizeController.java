@@ -1,5 +1,6 @@
 package person.cyx.community.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -23,6 +24,7 @@ import java.util.UUID;
  * @create: 2019-09-27 17:10
  **/
 @Controller
+@Slf4j
 public class AuthorizeController {
 
     @Autowired
@@ -63,6 +65,7 @@ public class AuthorizeController {
             response.addCookie(new Cookie("token",token));
             return "redirect:/";
         }else {
+            log.error("callback get github error,{}", githubUser);
             //登录失败，重新登录
             return "redirect:/";
         }

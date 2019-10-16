@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import person.cyx.community.dto.PaginationDTO;
 import person.cyx.community.dto.QuestionDTO;
+import person.cyx.community.dto.QuestionQueryDTO;
 import person.cyx.community.exception.CustomizeErrorCode;
 import person.cyx.community.exception.CustomizeException;
 import person.cyx.community.mapper.QuestionExtMapper;
@@ -37,11 +38,18 @@ public class QuestionService {
     @Autowired
     private QuestionExtMapper questionExtMapper;
 
-    public PaginationDTO list(Integer page, Integer size) {
+    public PaginationDTO list(String search, Integer page, Integer size) {
+
+        if (StringUtils.isNotBlank(search)){
+            String[] tags = StringUtils.split(search, " ");
+            search = Arrays.stream(tags).collect(Collectors.joining("|"));
+        }
 
         PaginationDTO paginationDTO = new PaginationDTO();
-        QuestionExample questionExample = new QuestionExample();
-        Integer count = (int) questionMapper.countByExample(questionExample);
+
+        QuestionQueryDTO questionQueryDTO = new QuestionQueryDTO();
+        questionQueryDTO.setSearch(search);
+        Integer count = questionExtMapper.countBySearch(questionQueryDTO);
         paginationDTO.setPagination(count, page, size);
 
         if (page < 1){
@@ -52,8 +60,10 @@ public class QuestionService {
         }
 
         Integer offset = size * (page - 1);
-        questionExample.setOrderByClause("gmt_create desc");
-        List<Question> questions = questionMapper.selectByExampleWithRowbounds(questionExample,new RowBounds(offset, size));
+
+        questionQueryDTO.setPage(offset);
+        questionQueryDTO.setSize(size);
+        List<Question> questions = questionExtMapper.selectBySearch(questionQueryDTO);
         List<QuestionDTO> questionDTOList = new ArrayList<>();
         for (Question question : questions) {
             User user = userMapper.selectByPrimaryKey(question.getCreator());
